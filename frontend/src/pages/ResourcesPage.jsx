@@ -5,22 +5,20 @@ import {
   UsersIcon,
   MapPinIcon,
   LayoutGridIcon,
-  ListIcon } from
+  ListIcon,
+  BuildingIcon } from
 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { StatusBadge } from '../components/common/StatusBadge';
 import { Modal } from '../components/common/Modal';
-import { Resource } from '../types';
 export function ResourcesPage() {
   const { resources } = useApp();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedResource, setSelectedResource] = useState<Resource | null>(
-    null
-  );
+  const [viewMode, setViewMode] = useState('grid');
+  const [selectedResource, setSelectedResource] = useState(null);
   const filteredResources = resources.filter((r) => {
     const matchesSearch =
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,7 +26,7 @@ export function ResourcesPage() {
     const matchesType = typeFilter === 'ALL' || r.type === typeFilter;
     return matchesSearch && matchesType;
   });
-  const handleBookClick = (resource: Resource, e: React.MouseEvent) => {
+  const handleBookClick = (resource, e) => {
     e.stopPropagation();
     // In a real app, this would navigate to bookings page with pre-filled resource
     alert(`Navigate to booking form for ${resource.name}`);

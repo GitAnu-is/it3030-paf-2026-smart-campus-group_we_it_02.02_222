@@ -10,18 +10,12 @@ import {
   XIcon } from
 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-interface SidebarProps {
-  currentPage: string;
-  navigate: (page: string) => void;
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-}
 export function Sidebar({
   currentPage,
   navigate,
   isOpen,
   setIsOpen
-}: SidebarProps) {
+}) {
   const { user, logout } = useAuth();
   const navItems = [
   {
@@ -45,7 +39,7 @@ export function Sidebar({
     icon: WrenchIcon
   }];
 
-  const handleNav = (id: string) => {
+  const handleNav = (id) => {
     navigate(id);
     setIsOpen(false);
   };

@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-interface AppShellProps {
-  children: React.ReactNode;
-  currentPage: string;
-  navigate: (page: string) => void;
-}
-export function AppShell({ children, currentPage, navigate }: AppShellProps) {
+export function AppShell({ children, currentPage, navigate }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">

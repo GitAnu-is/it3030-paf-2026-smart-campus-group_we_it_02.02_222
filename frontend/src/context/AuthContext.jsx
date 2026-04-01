@@ -1,16 +1,10 @@
-import React, { useState, createContext, useContext, ReactNode } from 'react';
-import { User, Role } from '../types';
+import React, { useState, createContext, useContext } from 'react';
 import { mockUsers } from '../data/mockData';
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (role: Role) => void;
-  logout: () => void;
-}
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-export function AuthProvider({ children }: {children: ReactNode;}) {
-  const [user, setUser] = useState<User | null>(null);
-  const login = (role: Role) => {
+const AuthContext = createContext(undefined);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const login = (role) => {
     // Mock login by finding the first user with the requested role
     const mockUser = mockUsers.find((u) => u.role === role);
     if (mockUser) {
