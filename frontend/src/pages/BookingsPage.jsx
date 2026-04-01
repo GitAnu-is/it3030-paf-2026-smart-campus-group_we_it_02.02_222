@@ -14,8 +14,8 @@ import {
 export function BookingsPage() {
   const { bookings, resources, addBooking, updateBookingStatus } = useApp();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'MY' | 'ALL' | 'NEW'>('MY');
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('MY');
+  const [selectedBooking, setSelectedBooking] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   // Form state
   const [formData, setFormData] = useState({
@@ -34,9 +34,13 @@ export function BookingsPage() {
 
   filter((b) => statusFilter === 'ALL' || b.status === statusFilter).
   sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
     setFormError('');
+    if (!user) {
+      setFormError('Please sign in to create a booking.');
+      return;
+    }
     if (
     !formData.resourceId ||
     !formData.date ||
@@ -52,7 +56,7 @@ export function BookingsPage() {
       return;
     }
     const result = addBooking({
-      userId: user!.id,
+      userId: user.id,
       resourceId: formData.resourceId,
       date: formData.date,
       startTime: formData.startTime,
@@ -74,7 +78,7 @@ export function BookingsPage() {
       setFormError(result.error || 'Failed to create booking.');
     }
   };
-  const handleStatusUpdate = (id: string, status: any) => {
+  const handleStatusUpdate = (id, status) => {
     updateBookingStatus(id, status);
     setSelectedBooking(null);
   };

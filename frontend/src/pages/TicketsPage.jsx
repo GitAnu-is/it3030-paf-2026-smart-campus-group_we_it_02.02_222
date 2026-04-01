@@ -20,8 +20,8 @@ export function TicketsPage() {
     assignTicket
   } = useApp();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'MY' | 'ALL' | 'NEW'>('MY');
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('MY');
+  const [selectedTicket, setSelectedTicket] = useState(null);
   const [newComment, setNewComment] = useState('');
   // Form state
   const [formData, setFormData] = useState({
@@ -40,16 +40,17 @@ export function TicketsPage() {
   sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
     if (!formData.location || !formData.description) return;
+    if (!user) return;
     addTicket({
       location: formData.location,
       resourceId: formData.resourceId || undefined,
-      category: formData.category as any,
-      priority: formData.priority as any,
+      category: formData.category,
+      priority: formData.priority,
       description: formData.description,
-      reporterId: user!.id,
+      reporterId: user.id,
       images: []
     });
     setActiveTab('MY');
@@ -79,7 +80,7 @@ export function TicketsPage() {
 
     });
   };
-  const calculateSLA = (createdAt: string) => {
+  const calculateSLA = (createdAt) => {
     const hours = Math.floor(
       (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60)
     );
@@ -462,7 +463,7 @@ export function TicketsPage() {
                     No comments yet.
                   </p> :
 
-              selectedTicket.comments.map((comment: any) =>
+              selectedTicket.comments.map((comment) =>
               <div
                 key={comment.id}
                 className={`flex flex-col ${comment.authorId === user?.id ? 'items-end' : 'items-start'}`}>

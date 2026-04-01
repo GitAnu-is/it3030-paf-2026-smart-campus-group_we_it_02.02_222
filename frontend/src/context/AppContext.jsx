@@ -1,70 +1,29 @@
-import React, { useState, createContext, useContext, ReactNode } from 'react';
-import {
-  Resource,
-  Booking,
-  Ticket,
-  Notification,
-  BookingStatus,
-  TicketStatus,
-  Comment } from
-'../types';
+import React, { useState, createContext, useContext } from 'react';
 import {
   mockResources,
   mockBookings,
   mockTickets,
-  mockNotifications } from
-'../data/mockData';
+  mockNotifications
+} from '../data/mockData';
 import { useAuth } from './AuthContext';
-interface AppContextType {
-  resources: Resource[];
-  bookings: Booking[];
-  tickets: Ticket[];
-  notifications: Notification[];
-  // Resource actions
-  addResource: (resource: Omit<Resource, 'id'>) => void;
-  updateResource: (id: string, updates: Partial<Resource>) => void;
-  // Booking actions
-  addBooking: (booking: Omit<Booking, 'id' | 'status' | 'createdAt'>) => {
-    success: boolean;
-    error?: string;
-  };
-  updateBookingStatus: (
-  id: string,
-  status: BookingStatus,
-  adminNote?: string)
-  => void;
-  // Ticket actions
-  addTicket: (
-  ticket: Omit<Ticket, 'id' | 'status' | 'createdAt' | 'comments'>)
-  => void;
-  updateTicketStatus: (
-  id: string,
-  status: TicketStatus,
-  reason?: string)
-  => void;
-  assignTicket: (id: string, assigneeId: string) => void;
-  addComment: (ticketId: string, content: string) => void;
-  // Notification actions
-  markNotificationRead: (id: string) => void;
-  markAllNotificationsRead: () => void;
-}
-const AppContext = createContext<AppContextType | undefined>(undefined);
-export function AppProvider({ children }: {children: ReactNode;}) {
+const AppContext = createContext(undefined);
+
+export function AppProvider({ children }) {
   const { user } = useAuth();
-  const [resources, setResources] = useState<Resource[]>(mockResources);
-  const [bookings, setBookings] = useState<Booking[]>(mockBookings);
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [resources, setResources] = useState(mockResources);
+  const [bookings, setBookings] = useState(mockBookings);
+  const [tickets, setTickets] = useState(mockTickets);
   const [notifications, setNotifications] =
-  useState<Notification[]>(mockNotifications);
+  useState(mockNotifications);
   const generateId = () => Math.random().toString(36).substr(2, 9);
   const createNotification = (
-  userId: string,
-  type: 'BOOKING' | 'TICKET' | 'SYSTEM',
-  title: string,
-  message: string,
-  linkTo?: string) =>
+  userId,
+  type,
+  title,
+  message,
+  linkTo) =>
   {
-    const newNotif: Notification = {
+    const newNotif = {
       id: generateId(),
       userId,
       type,
@@ -76,7 +35,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     };
     setNotifications((prev) => [newNotif, ...prev]);
   };
-  const addResource = (resource: Omit<Resource, 'id'>) => {
+  const addResource = (resource) => {
     setResources((prev) => [
     ...prev,
     {
@@ -85,7 +44,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     }]
     );
   };
-  const updateResource = (id: string, updates: Partial<Resource>) => {
+  const updateResource = (id, updates) => {
     setResources((prev) =>
     prev.map((r) =>
     r.id === id ?
@@ -98,7 +57,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     );
   };
   const addBooking = (
-  bookingData: Omit<Booking, 'id' | 'status' | 'createdAt'>) =>
+  bookingData) =>
   {
     // Conflict detection
     const hasConflict = bookings.some(
@@ -120,7 +79,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
         error: 'This resource is already booked during the selected time.'
       };
     }
-    const newBooking: Booking = {
+    const newBooking = {
       ...bookingData,
       id: generateId(),
       status: 'PENDING',
@@ -140,9 +99,9 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     };
   };
   const updateBookingStatus = (
-  id: string,
-  status: BookingStatus,
-  adminNote?: string) =>
+  id,
+  status,
+  adminNote) =>
   {
     setBookings((prev) =>
     prev.map((b) => {
@@ -165,9 +124,9 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     );
   };
   const addTicket = (
-  ticketData: Omit<Ticket, 'id' | 'status' | 'createdAt' | 'comments'>) =>
+  ticketData) =>
   {
-    const newTicket: Ticket = {
+    const newTicket = {
       ...ticketData,
       id: generateId(),
       status: 'OPEN',
@@ -184,14 +143,14 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     );
   };
   const updateTicketStatus = (
-  id: string,
-  status: TicketStatus,
-  reason?: string) =>
+  id,
+  status,
+  reason) =>
   {
     setTickets((prev) =>
     prev.map((t) => {
       if (t.id === id) {
-        const updates: Partial<Ticket> = {
+        const updates = {
           status
         };
         if (status === 'RESOLVED' || status === 'CLOSED')
@@ -213,7 +172,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     })
     );
   };
-  const assignTicket = (id: string, assigneeId: string) => {
+  const assignTicket = (id, assigneeId) => {
     setTickets((prev) =>
     prev.map((t) => {
       if (t.id === id) {
@@ -233,9 +192,9 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     })
     );
   };
-  const addComment = (ticketId: string, content: string) => {
+  const addComment = (ticketId, content) => {
     if (!user) return;
-    const newComment: Comment = {
+    const newComment = {
       id: generateId(),
       ticketId,
       authorId: user.id,
@@ -267,7 +226,7 @@ export function AppProvider({ children }: {children: ReactNode;}) {
     })
     );
   };
-  const markNotificationRead = (id: string) => {
+  const markNotificationRead = (id) => {
     setNotifications((prev) =>
     prev.map((n) =>
     n.id === id ?
@@ -313,7 +272,6 @@ export function AppProvider({ children }: {children: ReactNode;}) {
       
       {children}
     </AppContext.Provider>);
-
 }
 export function useApp() {
   const context = useContext(AppContext);

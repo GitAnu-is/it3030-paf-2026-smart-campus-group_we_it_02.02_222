@@ -1,9 +1,5 @@
 import React from 'react';
-interface StatusBadgeProps {
-  status: string;
-  type?: 'booking' | 'ticket' | 'resource' | 'priority';
-}
-export function StatusBadge({ status, type }: StatusBadgeProps) {
+export function StatusBadge({ status, type }) {
   let bg = 'bg-gray-100';
   let text = 'text-gray-800';
   const normalizedStatus = status.toUpperCase();

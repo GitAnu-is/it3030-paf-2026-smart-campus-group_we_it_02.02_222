@@ -23,10 +23,7 @@ import {
   LineChart,
   Line } from
 'recharts';
-interface DashboardPageProps {
-  navigate: (page: string) => void;
-}
-export function DashboardPage({ navigate }: DashboardPageProps) {
+export function DashboardPage({ navigate }) {
   const { user } = useAuth();
   const { bookings, tickets, resources } = useApp();
   // User specific data

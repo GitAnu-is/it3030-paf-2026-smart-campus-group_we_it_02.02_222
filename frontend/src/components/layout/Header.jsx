@@ -2,36 +2,33 @@ import React, { useEffect, useState, useRef } from 'react';
 import { BellIcon, MenuIcon, CheckIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-interface HeaderProps {
-  currentPage: string;
-  onMenuClick: () => void;
-  navigate: (page: string) => void;
-}
-export function Header({ currentPage, onMenuClick, navigate }: HeaderProps) {
+export function Header({ currentPage, onMenuClick, navigate }) {
   const { user } = useAuth();
   const { notifications, markNotificationRead, markAllNotificationsRead } =
   useApp();
   const [showNotifications, setShowNotifications] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef(null);
   const myNotifications = notifications.filter(
     (n) =>
     n.userId === user?.id || user?.role === 'ADMIN' && n.userId === 'admin'
   );
   const unreadCount = myNotifications.filter((n) => !n.read).length;
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event) => {
       if (
-      notifRef.current &&
-      !notifRef.current.contains(event.target as Node))
+      notifRef.current)
       {
-        setShowNotifications(false);
+        const target = event.target;
+        if (target instanceof Node && !notifRef.current.contains(target)) {
+          setShowNotifications(false);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   const pageTitle = currentPage.charAt(0).toUpperCase() + currentPage.slice(1);
-  const handleNotifClick = (notif: any) => {
+  const handleNotifClick = (notif) => {
     markNotificationRead(notif.id);
     if (notif.linkTo) {
       navigate(notif.linkTo);

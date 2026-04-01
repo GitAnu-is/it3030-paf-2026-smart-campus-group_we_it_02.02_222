@@ -6,15 +6,9 @@ import {
   WrenchIcon } from
 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Role } from '../types';
 export function LoginPage() {
   const { login } = useAuth();
-  const roles: {
-    role: Role;
-    title: string;
-    desc: string;
-    icon: React.ElementType;
-  }[] = [
+  const roles = [
   {
     role: 'USER',
     title: 'Student / Staff',
