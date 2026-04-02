@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   GraduationCapIcon,
   UserIcon,
@@ -7,7 +7,74 @@ import {
 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithGoogleCredential } = useAuth();
+  const googleClientId = useMemo(() => import.meta.env.VITE_GOOGLE_CLIENT_ID, []);
+  const googleBtnRef = useRef(null);
+  const googleInitRef = useRef(false);
+  const [googleError, setGoogleError] = useState('');
+
+  useEffect(() => {
+    if (!googleClientId) return;
+    if (googleInitRef.current) return;
+
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 30; // ~3s
+
+    const tryInit = () => {
+      const google = window.google;
+      if (!google?.accounts?.id) return false;
+
+      googleInitRef.current = true;
+      setGoogleError('');
+
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          const result = loginWithGoogleCredential(response?.credential);
+          if (!result?.success) {
+            setGoogleError(result?.error || 'Google login failed.');
+          }
+        }
+      });
+
+      if (googleBtnRef.current) {
+        google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: 'outline',
+          size: 'large',
+          shape: 'pill',
+          width: '320'
+        });
+      }
+
+      google.accounts.id.prompt();
+      return true;
+    };
+
+    if (tryInit()) return;
+
+    const timer = setInterval(() => {
+      if (cancelled || googleInitRef.current) {
+        clearInterval(timer);
+        return;
+      }
+      attempts += 1;
+      if (tryInit()) {
+        clearInterval(timer);
+        return;
+      }
+      if (attempts >= maxAttempts) {
+        clearInterval(timer);
+        if (!cancelled) setGoogleError('Google Sign-In script did not load.');
+      }
+    }, 100);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [googleClientId, loginWithGoogleCredential]);
+
   const roles = [
   {
     role: 'USER',
@@ -42,6 +109,26 @@ export function LoginPage() {
         </div>
 
         <div className="p-8">
+          {googleClientId &&
+          <>
+              <div className="flex justify-center">
+                <div ref={googleBtnRef} />
+              </div>
+              {googleError &&
+            <p className="mt-3 text-xs text-red-600 text-center">
+                  {googleError}
+                </p>
+            }
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs text-slate-400 font-semibold uppercase">
+                  or
+                </span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+            </>
+          }
+
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 text-center">
             Select role to sign in (Mock OAuth)
           </h2>
