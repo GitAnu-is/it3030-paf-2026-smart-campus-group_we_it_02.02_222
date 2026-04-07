@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -70,9 +71,18 @@ function AppRoutes() {
     </Routes>);
 }
 export function App() {
-    return (<AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>);
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    const AppShell = (<AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>);
+
+    if (!googleClientId) {
+        return AppShell;
+    }
+
+    return (<GoogleOAuthProvider clientId={googleClientId}>
+        {AppShell}
+      </GoogleOAuthProvider>);
 }

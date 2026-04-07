@@ -3,17 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { Building2, Eye, EyeOff, LogIn, AlertCircle, Loader2, } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
 export function Login() {
     const { loginWithCredentials, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from?.pathname || '/';
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [showGoogleRolePicker, setShowGoogleRolePicker] = useState(false);
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -33,11 +34,21 @@ export function Login() {
             setError(result.error || 'Login failed.');
         }
     };
-    const handleGoogleLogin = (role) => {
-      loginWithGoogle(role);
-        navigate(from, {
-            replace: true,
-        });
+    const handleGoogleCredential = async (idToken) => {
+      setError('');
+      if (!idToken) {
+        setError('Google sign-in did not return a credential.');
+        return;
+      }
+      setIsLoading(true);
+      const result = await loginWithGoogle(idToken);
+      setIsLoading(false);
+      if (result.success) {
+        navigate(from, { replace: true });
+      }
+      else {
+        setError(result.error || 'Google sign-in failed.');
+      }
     };
     return (<div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background decoration */}
@@ -153,110 +164,10 @@ export function Login() {
 
           {/* Google Sign-In */}
           <div className="mt-6">
-            <AnimatePresence mode="wait">
-              {!showGoogleRolePicker ? (<motion.button key="google-btn" initial={{
-                opacity: 1,
-            }} exit={{
-                opacity: 0,
-                height: 0,
-            }} onClick={() => setShowGoogleRolePicker(true)} className="w-full flex items-center justify-center py-2.5 px-4 border border-slate-300 rounded-lg shadow-sm bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
+            <div className="flex justify-center">
+              {googleClientId ? (<GoogleLogin onSuccess={(credentialResponse) => handleGoogleCredential(credentialResponse?.credential)} onError={() => setError('Google sign-in failed.')} width="360"/>) : (<button type="button" disabled className="w-full flex items-center justify-center py-2.5 px-4 border border-slate-300 rounded-lg shadow-sm bg-slate-50 text-sm font-medium text-slate-400 cursor-not-allowed">
                   Sign in with Google
-                </motion.button>) : (<motion.div key="role-picker" initial={{
-                opacity: 0,
-                y: 10,
-            }} animate={{
-                opacity: 1,
-                y: 0,
-            }} exit={{
-                opacity: 0,
-            }} className="space-y-2">
-                  <p className="text-xs font-medium text-slate-500 text-center mb-3">
-                    Select your Google account role (Demo)
-                  </p>
-                  {[
-                {
-                    role: 'USER',
-                    label: 'Student / Staff',
-                    desc: 'alice@university.edu',
-                },
-                {
-                    role: 'ADMIN',
-                    label: 'Administrator',
-                    desc: 'admin@university.edu',
-                },
-                {
-                    role: 'TECHNICIAN',
-                    label: 'Technician',
-                    desc: 'tech@university.edu',
-                },
-            ].map((option) => (<button key={option.role} onClick={() => handleGoogleLogin(option.role)} className="w-full flex items-center p-3 border border-slate-200 rounded-lg hover:border-primary-400 hover:bg-primary-50 transition-all text-left group">
-                      <svg className="w-5 h-5 mr-3 shrink-0" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                      </svg>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900">
-                          {option.label}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {option.desc}
-                        </p>
-                      </div>
-                    </button>))}
-                  <button onClick={() => setShowGoogleRolePicker(false)} className="w-full text-xs text-slate-400 hover:text-slate-600 mt-2 py-1 transition-colors">
-                    Cancel
-                  </button>
-                </motion.div>)}
-            </AnimatePresence>
-          </div>
-
-          {/* Demo Credentials Hint */}
-          <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-              Demo Credentials
-            </p>
-            <div className="space-y-2">
-              {[
-            {
-                label: 'Student',
-                user: 'alice',
-                pass: 'student123',
-            },
-            {
-                label: 'Admin',
-                user: 'bob',
-                pass: 'admin123',
-            },
-            {
-                label: 'Technician',
-                user: 'charlie',
-                pass: 'tech123',
-            },
-        ].map((cred) => (<button key={cred.user} type="button" onClick={() => {
-                setUsername(cred.user);
-                setPassword(cred.pass);
-                setError('');
-            }} className="w-full flex items-center justify-between px-3 py-2 bg-white border border-slate-200 rounded-lg text-left hover:border-primary-300 hover:bg-primary-50/50 transition-all group">
-                  <div>
-                    <span className="text-xs font-semibold text-slate-700 group-hover:text-primary-700">
-                      {cred.label}
-                    </span>
-                    <span className="text-xs text-slate-400 ml-2">
-                      {cred.user} / {cred.pass}
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-400 group-hover:text-primary-500 transition-colors">
-                    FILL
-                  </span>
-                </button>))}
+                </button>)}
             </div>
           </div>
         </motion.div>
