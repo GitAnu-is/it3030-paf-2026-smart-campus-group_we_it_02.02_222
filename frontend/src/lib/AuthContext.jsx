@@ -1,7 +1,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 
 const TOKEN_KEY = 'uniops_token';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 
 const normalizeUser = (u) => ({
     id: u.id,
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
     const loginWithCredentials = async (username, password) => {
         try {
-            const data = await authFetch('/auth/login', {
+            const data = await authFetch('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });

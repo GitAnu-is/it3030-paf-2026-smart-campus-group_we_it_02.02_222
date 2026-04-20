@@ -3,6 +3,7 @@ package com.smartcampus.backend.model;
 import java.time.Instant;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import lombok.AllArgsConstructor;
@@ -20,8 +21,13 @@ public class User {
     @Id
     private String id;
 
+    @Indexed(unique = true)
     private String username;
+    
+    @Indexed(unique = true)
     private String email;
+    
+    private String displayName;
     private String passwordHash;
     private String role;
     private Instant createdAt;
