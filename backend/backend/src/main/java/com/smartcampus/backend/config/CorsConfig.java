@@ -13,12 +13,11 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("http://localhost:5173");
-        configuration.addAllowedOrigin("http://127.0.0.1:5173");
-        configuration.addAllowedOrigin("http://192.168.217.1:5173");
-        configuration.addAllowedOrigin("http://10.0.1.1:5173");
-        configuration.addAllowedOrigin("http://192.168.37.1:5173");
-        configuration.addAllowedOrigin("http://192.168.8.112:5173");
+        // Dev-friendly: allow Vite on any port for localhost / LAN.
+        configuration.addAllowedOriginPattern("http://localhost:*");
+        configuration.addAllowedOriginPattern("http://127.0.0.1:*");
+        configuration.addAllowedOriginPattern("http://192.168.*.*:*");
+        configuration.addAllowedOriginPattern("http://10.*.*.*:*");
         configuration.addAllowedMethod("GET");
         configuration.addAllowedMethod("POST");
         configuration.addAllowedMethod("PUT");

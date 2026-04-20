@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
                 return;
             }
             try {
-                const me = await authFetch('/auth/me', { method: 'GET' });
+                const me = await authFetch('/api/auth/me', { method: 'GET' });
                 setUser(normalizeUser(me));
             }
             catch {
@@ -73,6 +73,14 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });
+
+            if (!data?.success) {
+                throw new Error(data?.message || 'Invalid username or password');
+            }
+            if (!data?.token || !data?.user) {
+                throw new Error('Login response missing token or user');
+            }
+
             localStorage.setItem(TOKEN_KEY, data.token);
             setUser(normalizeUser(data.user));
             return { success: true };
@@ -83,10 +91,18 @@ export const AuthProvider = ({ children }) => {
     };
     const loginWithGoogle = async (idToken) => {
         try {
-            const data = await authFetch('/auth/google', {
+            const data = await authFetch('/api/auth/google', {
                 method: 'POST',
                 body: JSON.stringify({ idToken }),
             });
+
+            if (!data?.success) {
+                throw new Error(data?.message || 'Google sign-in failed');
+            }
+            if (!data?.token || !data?.user) {
+                throw new Error('Google login response missing token or user');
+            }
+
             localStorage.setItem(TOKEN_KEY, data.token);
             setUser(normalizeUser(data.user));
             return { success: true };
