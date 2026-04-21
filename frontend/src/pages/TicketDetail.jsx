@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { getTicketById, getResourceById, getCommentsForTicket, updateTicketStatus, assignTicket, addComment, } from '../lib/api';
-import { mockUsers } from '../lib/mockData';
+import { getTicketById, getResourceById, getCommentsForTicket, updateTicketStatus, assignTicket, addComment, getUsers, } from '../lib/api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
@@ -15,6 +14,8 @@ export function TicketDetail() {
     const [ticket, setTicket] = useState(null);
     const [resource, setResource] = useState(null);
     const [comments, setComments] = useState([]);
+    const [technicians, setTechnicians] = useState([]);
+    const [users, setUsers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -30,12 +31,16 @@ export function TicketDetail() {
         try {
             const tData = await getTicketById(id);
             setTicket(tData);
-            const [rData, cData] = await Promise.all([
+            const [rData, cData, technicianData, userData] = await Promise.all([
                 getResourceById(tData.resourceId),
                 getCommentsForTicket(id),
+                getUsers({ role: 'TECHNICIAN' }),
+                getUsers(),
             ]);
             setResource(rData);
             setComments(cData);
+            setTechnicians(technicianData);
+            setUsers(userData);
         }
         catch (error) {
             console.error('Failed to fetch ticket details', error);
@@ -100,9 +105,12 @@ export function TicketDetail() {
         return <LoadingSpinner fullPage/>;
     if (!ticket || !resource)
         return <div className="p-8 text-center">Ticket not found</div>;
-    const getUserName = (userId) => mockUsers.find((u) => u.id === userId)?.name || 'Unknown User';
-    const getUserAvatar = (userId) => mockUsers.find((u) => u.id === userId)?.avatar;
-    const technicians = mockUsers.filter((u) => u.role === 'TECHNICIAN');
+    const getUser = (userId) => users.find((u) => u.id === userId);
+    const getUserName = (userId) => {
+        const foundUser = getUser(userId);
+        return (foundUser?.displayName || foundUser?.name || 'Unknown User');
+    };
+    const getUserAvatar = (userId) => getUser(userId)?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(userId))}&background=6366f1&color=fff`;
     // Calculate SLA
     const created = new Date(ticket.createdAt).getTime();
     const now = new Date().getTime();
