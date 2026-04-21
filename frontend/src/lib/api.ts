@@ -2,6 +2,7 @@ import type {
   Booking,
   Ticket,
   Comment,
+  User,
   ResourceType,
   BookingStatus,
   TicketStatus,
@@ -241,6 +242,24 @@ export const assignTicket = async (id: string, assignedTo: string) => {
       status: 'IN_PROGRESS',
     }),
   })
+}
+
+export const getUsers = async (filters?: { role?: string }) => {
+  await delay()
+  const params = new URLSearchParams()
+  if (filters?.role) params.set('role', filters.role)
+
+  const path = params.toString() ? `/api/users?${params.toString()}` : '/api/users'
+  const users = await apiRequest<any[]>(path)
+  return users.map((user) => ({
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    name: user.displayName || user.username || user.email || 'Unknown User',
+    email: user.email,
+    role: user.role,
+    avatar: user.avatarUrl || undefined,
+  })) as User[]
 }
 
 // --- Comments ---
