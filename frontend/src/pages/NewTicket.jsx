@@ -18,7 +18,7 @@ export function NewTicket() {
     const [priority, setPriority] = useState('LOW');
     const [description, setDescription] = useState('');
     const [contactDetails, setContactDetails] = useState(user?.email || '');
-    const [images, setImages] = useState([]); // Simulated image URLs
+    const [images, setImages] = useState([]);
     useEffect(() => {
         const fetchResources = async () => {
             try {
@@ -35,11 +35,39 @@ export function NewTicket() {
         fetchResources();
     }, []);
     const handleImageUpload = (e) => {
-        // Simulate image upload by adding a placeholder URL
-        if (images.length >= 3)
+        const selectedFiles = Array.from(e.target.files || []);
+        if (selectedFiles.length === 0)
             return;
-        const newImage = `https://picsum.photos/seed/${Math.random()}/400/300`;
-        setImages([...images, newImage]);
+        const remainingSlots = 3 - images.length;
+        if (remainingSlots <= 0) {
+            e.target.value = '';
+            return;
+        }
+        const filesToRead = selectedFiles
+            .filter((file) => file.type?.startsWith('image/'))
+            .slice(0, remainingSlots);
+        if (filesToRead.length === 0) {
+            e.target.value = '';
+            return;
+        }
+        Promise.all(filesToRead.map((file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+            reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+            reader.readAsDataURL(file);
+        })))
+            .then((uploadedImages) => {
+            const validImages = uploadedImages.filter(Boolean);
+            if (validImages.length > 0) {
+                setImages((currentImages) => [...currentImages, ...validImages].slice(0, 3));
+            }
+        })
+            .catch((error) => {
+            console.error('Failed to read attachment image', error);
+        })
+            .finally(() => {
+            e.target.value = '';
+        });
     };
     const removeImage = (index) => {
         setImages(images.filter((_, i) => i !== index));
@@ -169,7 +197,7 @@ export function NewTicket() {
               {images.length < 3 && (<label className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-primary-400 hover:text-primary-500 cursor-pointer transition-colors">
                   <Upload className="w-6 h-6 mb-1"/>
                   <span className="text-xs font-medium">Upload</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload}/>
+                  <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload}/>
                 </label>)}
             </div>
           </div>

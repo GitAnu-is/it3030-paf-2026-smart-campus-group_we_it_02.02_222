@@ -4,23 +4,26 @@ const TOKEN_KEY = 'uniops_token';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
 const AVATAR_CACHE_PREFIX = 'uniops_avatar_';
 
-const getCachedAvatar = (userId) => {
-    if (!userId) {
-        return '';
+const getAvatarCacheKeys = (u) => [u?.id, u?.username, u?.email].filter(Boolean).map((value) => `${AVATAR_CACHE_PREFIX}${value}`);
+
+const getCachedAvatar = (u) => {
+    for (const key of getAvatarCacheKeys(u)) {
+        const cached = localStorage.getItem(key);
+        if (cached) {
+            return cached;
+        }
     }
-    return localStorage.getItem(`${AVATAR_CACHE_PREFIX}${userId}`) || '';
+    return '';
 };
 
-const setCachedAvatar = (userId, avatarUrl) => {
-    if (!userId) {
+const setCachedAvatar = (u, avatarUrl) => {
+    if (!u) {
         return;
     }
-    const key = `${AVATAR_CACHE_PREFIX}${userId}`;
-    if (avatarUrl) {
-        localStorage.setItem(key, avatarUrl);
-    }
-    else {
-        localStorage.removeItem(key);
+    for (const key of getAvatarCacheKeys(u)) {
+        if (avatarUrl) {
+            localStorage.setItem(key, avatarUrl);
+        }
     }
 };
 
@@ -31,7 +34,7 @@ const normalizeUser = (u) => ({
     name: u.displayName || u.username,
     email: u.email,
     role: u.role,
-    avatar: u.avatarUrl || getCachedAvatar(u.id),
+    avatar: u.avatarUrl || getCachedAvatar(u),
 });
 
 const authFetch = async (path, options = {}) => {
@@ -79,7 +82,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const me = await authFetch('/api/auth/me', { method: 'GET' });
                 const normalized = normalizeUser(me);
-                setCachedAvatar(normalized.id, normalized.avatar);
+                setCachedAvatar(normalized, normalized.avatar);
                 setUser(normalized);
             }
             catch {
@@ -108,7 +111,7 @@ export const AuthProvider = ({ children }) => {
 
             localStorage.setItem(TOKEN_KEY, data.token);
             const normalized = normalizeUser(data.user);
-            setCachedAvatar(normalized.id, normalized.avatar);
+            setCachedAvatar(normalized, normalized.avatar);
             setUser(normalized);
             return { success: true };
         }
@@ -132,7 +135,7 @@ export const AuthProvider = ({ children }) => {
 
             localStorage.setItem(TOKEN_KEY, data.token);
             const normalized = normalizeUser(data.user);
-            setCachedAvatar(normalized.id, normalized.avatar);
+            setCachedAvatar(normalized, normalized.avatar);
             setUser(normalized);
             return { success: true };
         }
@@ -152,7 +155,7 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ displayName, avatarUrl }),
             });
             const normalized = normalizeUser(updated);
-            setCachedAvatar(normalized.id, normalized.avatar);
+            setCachedAvatar(normalized, normalized.avatar);
             setUser(normalized);
             return { success: true };
         }
