@@ -25,7 +25,7 @@ import com.smartcampus.backend.model.User;
 import com.smartcampus.backend.repository.UserRepository;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     @Autowired
@@ -111,13 +111,15 @@ public class AuthController {
             }
 
             // Verify the ID token using Google's tokeninfo endpoint
-            Map tokenInfo;
+            Map<String, Object> tokenInfo;
             try {
-                tokenInfo = RestClient.create()
+                @SuppressWarnings("unchecked")
+                Map<String, Object> response = (Map<String, Object>) RestClient.create()
                         .get()
                         .uri("https://oauth2.googleapis.com/tokeninfo?id_token={idToken}", request.getIdToken())
                         .retrieve()
                         .body(Map.class);
+                tokenInfo = response;
             } catch (RestClientResponseException ex) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(LoginResponse.builder()
                         .success(false)

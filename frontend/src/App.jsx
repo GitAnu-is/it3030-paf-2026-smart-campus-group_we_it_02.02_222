@@ -16,6 +16,7 @@ import { Notifications } from './pages/Notifications';
 import { Analytics } from './pages/Analytics';
 import { CheckIn } from './pages/CheckIn';
 import { Settings } from './pages/Settings';
+import { ManageResources } from './pages/ManageResources';
 import { LoadingSpinner } from './components/LoadingSpinner';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles, }) => {
@@ -58,6 +59,10 @@ function AppRoutes() {
 
         <Route path="analytics" element={<ProtectedRoute allowedRoles={['ADMIN']}>
               <Analytics />
+            </ProtectedRoute>}/>
+
+        <Route path="manage-resources" element={<ProtectedRoute allowedRoles={['ADMIN']}>
+              <ManageResources />
             </ProtectedRoute>}/>
 
         <Route path="settings" element={<Settings />}/>

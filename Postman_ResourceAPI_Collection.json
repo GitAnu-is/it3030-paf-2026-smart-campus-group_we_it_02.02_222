@@ -1,0 +1,299 @@
+{
+  "info": {
+    "name": "Smart Campus - Resource Management API",
+    "description": "API collection for testing the Resource Management endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Resource Management",
+      "item": [
+        {
+          "name": "Get All Resources",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Resources - Filtered by Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources?type=LECTURE_HALL",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "LECTURE_HALL"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Resources - Filtered by Capacity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources?minCapacity=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"],
+              "query": [
+                {
+                  "key": "minCapacity",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Resources - Multiple Filters",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources?type=LAB&minCapacity=30&location=Building A&status=ACTIVE",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "LAB"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "30"
+                },
+                {
+                  "key": "location",
+                  "value": "Building A"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Resource by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources/{{resource_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources", "{{resource_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create LECTURE_HALL Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Physics Lecture Hall A\",\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": 150,\n  \"location\": \"Building A, Floor 3\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Large lecture hall equipped with projectors and audio system\",\n  \"availabilityWindows\": [\n    \"Monday 08:00-12:00\",\n    \"Tuesday 08:00-12:00\",\n    \"Wednesday 08:00-12:00\",\n    \"Thursday 08:00-12:00\",\n    \"Friday 08:00-12:00\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create LAB Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Computer Science Lab\",\n  \"type\": \"LAB\",\n  \"capacity\": 40,\n  \"location\": \"Building C, Floor 2\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Computer laboratory with 40 workstations running Linux and Windows\",\n  \"availabilityWindows\": [\n    \"Monday 09:00-11:00\",\n    \"Monday 13:00-16:00\",\n    \"Tuesday 09:00-11:00\",\n    \"Tuesday 13:00-16:00\",\n    \"Wednesday 09:00-11:00\",\n    \"Wednesday 13:00-16:00\",\n    \"Thursday 09:00-11:00\",\n    \"Thursday 13:00-16:00\",\n    \"Friday 09:00-11:00\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create MEETING_ROOM Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Executive Board Room\",\n  \"type\": \"MEETING_ROOM\",\n  \"capacity\": 20,\n  \"location\": \"Building B, Floor 4\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Professional meeting room with video conferencing setup\",\n  \"availabilityWindows\": [\n    \"Monday 10:00-17:00\",\n    \"Tuesday 10:00-17:00\",\n    \"Wednesday 10:00-17:00\",\n    \"Thursday 10:00-17:00\",\n    \"Friday 10:00-17:00\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create EQUIPMENT Resource",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Projector Cart\",\n  \"type\": \"EQUIPMENT\",\n  \"capacity\": 1,\n  \"location\": \"Equipment Storage, Building A\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Mobile projector cart with 4K resolution and wireless connectivity\",\n  \"availabilityWindows\": [\n    \"Monday 08:00-18:00\",\n    \"Tuesday 08:00-18:00\",\n    \"Wednesday 08:00-18:00\",\n    \"Thursday 08:00-18:00\",\n    \"Friday 08:00-18:00\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Resource",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Physics Lecture Hall A - Updated\",\n  \"type\": \"LECTURE_HALL\",\n  \"capacity\": 160,\n  \"location\": \"Building A, Floor 3\",\n  \"status\": \"ACTIVE\",\n  \"description\": \"Large lecture hall equipped with projectors, audio system, and interactive whiteboard\",\n  \"availabilityWindows\": [\n    \"Monday 08:00-12:00\",\n    \"Monday 14:00-18:00\",\n    \"Tuesday 08:00-12:00\",\n    \"Tuesday 14:00-18:00\",\n    \"Wednesday 08:00-12:00\",\n    \"Wednesday 14:00-18:00\",\n    \"Thursday 08:00-12:00\",\n    \"Thursday 14:00-18:00\",\n    \"Friday 08:00-12:00\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources/{{resource_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources", "{{resource_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Resource",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/resources/{{resource_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "resources", "{{resource_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "resource_id",
+      "value": "replace_with_resource_id",
+      "type": "string"
+    }
+  ]
+}

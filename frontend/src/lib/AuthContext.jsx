@@ -1,7 +1,7 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 
 const TOKEN_KEY = 'uniops_token';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8081/api/v1';
 
 const normalizeUser = (u) => ({
     id: u.id,
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
                 return;
             }
             try {
-                const me = await authFetch('/api/auth/me', { method: 'GET' });
+                const me = await authFetch('/auth/me', { method: 'GET' });
                 setUser(normalizeUser(me));
             }
             catch {
@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
     const loginWithCredentials = async (username, password) => {
         try {
-            const data = await authFetch('/api/auth/login', {
+            const data = await authFetch('/auth/login', {
                 method: 'POST',
                 body: JSON.stringify({ username, password }),
             });
@@ -91,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     };
     const loginWithGoogle = async (idToken) => {
         try {
-            const data = await authFetch('/api/auth/google', {
+            const data = await authFetch('/auth/google', {
                 method: 'POST',
                 body: JSON.stringify({ idToken }),
             });

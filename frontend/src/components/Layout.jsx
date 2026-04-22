@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { LayoutDashboard, Building2, CalendarDays, Wrench, Bell, BarChart3, Settings, LogOut, Menu, Search, ChevronLeft, } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarDays, Wrench, Bell, BarChart3, Database, Settings, LogOut, Menu, Search, ChevronLeft, } from 'lucide-react';
 import { getNotifications } from '../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 export function Layout() {
@@ -71,6 +71,12 @@ export function Layout() {
             path: '/analytics',
             icon: BarChart3,
             label: 'Analytics',
+            roles: ['ADMIN'],
+        },
+        {
+            path: '/manage-resources',
+            icon: Database,
+            label: 'Manage Resources',
             roles: ['ADMIN'],
         },
         {
