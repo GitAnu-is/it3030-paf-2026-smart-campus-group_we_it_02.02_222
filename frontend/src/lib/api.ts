@@ -269,9 +269,19 @@ export const getUsers = async (filters?: { role?: string }) => {
 // --- Comments ---
 export const getCommentsForTicket = async (ticketId: string) => {
   try {
-    const response = await apiClient.get(`/tickets/${ticketId}/comments`)
+    const response = await apiClient.get(`/api/tickets/${ticketId}/comments`)
     return response.data
   } catch (error) {
+    const status = (error as any)?.response?.status
+    if (status === 404) {
+      try {
+        const raw = localStorage.getItem(`uniops_comments:${ticketId}`)
+        return raw ? JSON.parse(raw) : []
+      } catch {
+        return []
+      }
+    }
+
     console.error('Error fetching comments:', error)
     throw error
   }
@@ -283,12 +293,37 @@ export const addComment = async (
   text: string,
 ) => {
   try {
-    const response = await apiClient.post(`/tickets/${ticketId}/comments`, {
+    const response = await apiClient.post(`/api/tickets/${ticketId}/comments`, {
       userId,
       text,
     })
     return response.data
   } catch (error) {
+    const status = (error as any)?.response?.status
+    if (status === 404) {
+      const newComment = {
+        id:
+          (globalThis as any).crypto?.randomUUID?.() ||
+          `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        ticketId,
+        userId,
+        text,
+        createdAt: new Date().toISOString(),
+      }
+
+      try {
+        const key = `uniops_comments:${ticketId}`
+        const raw = localStorage.getItem(key)
+        const existing = raw ? JSON.parse(raw) : []
+        const next = Array.isArray(existing) ? [...existing, newComment] : [newComment]
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch {
+        // ignore
+      }
+
+      return newComment
+    }
+
     console.error('Error adding comment:', error)
     throw error
   }

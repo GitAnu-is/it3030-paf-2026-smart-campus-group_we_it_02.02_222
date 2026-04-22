@@ -52,7 +52,9 @@ function AppRoutes() {
             </ProtectedRoute>}/>
 
         <Route path="tickets" element={<Tickets />}/>
-        <Route path="tickets/new" element={<NewTicket />}/>
+        <Route path="tickets/new" element={<ProtectedRoute allowedRoles={['USER', 'ADMIN']}>
+              <NewTicket />
+            </ProtectedRoute>}/>
         <Route path="tickets/:id" element={<TicketDetail />}/>
 
         <Route path="notifications" element={<Notifications />}/>

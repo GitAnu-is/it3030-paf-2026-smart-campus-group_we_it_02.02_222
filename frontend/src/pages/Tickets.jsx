@@ -74,10 +74,10 @@ export function Tickets() {
             Report and track facility issues.
           </p>
         </div>
-        <button onClick={() => navigate('/tickets/new')} className="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
-          <Plus className="w-4 h-4 mr-2"/>
-          New Ticket
-        </button>
+        {(user?.role === 'USER' || user?.role === 'ADMIN') && (<button onClick={() => navigate('/tickets/new')} className="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 shadow-sm transition-colors">
+            <Plus className="w-4 h-4 mr-2"/>
+            New Ticket
+          </button>)}
       </div>
 
       {/* Tabs & Filters */}

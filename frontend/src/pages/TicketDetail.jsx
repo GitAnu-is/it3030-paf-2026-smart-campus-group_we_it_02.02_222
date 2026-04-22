@@ -31,16 +31,35 @@ export function TicketDetail() {
         try {
             const tData = await getTicketById(id);
             setTicket(tData);
-            const [rData, cData, technicianData, userData] = await Promise.all([
-                getResourceById(tData.resourceId),
-                getCommentsForTicket(id),
-                getUsers({ role: 'TECHNICIAN' }),
-                getUsers(),
-            ]);
-            setResource(rData);
-            setComments(cData);
-            setTechnicians(technicianData);
-            setUsers(userData);
+        const [rRes, cRes, techRes, usersRes] = await Promise.allSettled([
+          getResourceById(tData.resourceId),
+          getCommentsForTicket(id),
+          getUsers({ role: 'TECHNICIAN' }),
+          getUsers(),
+        ]);
+        if (rRes.status === 'fulfilled')
+          setResource(rRes.value);
+        else
+          setResource(null);
+        if (cRes.status === 'fulfilled')
+          setComments(cRes.value);
+        else
+          setComments([]);
+        const allUsers = usersRes.status === 'fulfilled' ? usersRes.value : [];
+        setUsers(allUsers);
+
+        if (techRes.status === 'fulfilled') {
+          const techs = techRes.value;
+          if (Array.isArray(techs) && techs.length > 0) {
+            setTechnicians(techs);
+          }
+          else {
+            setTechnicians(allUsers.filter((u) => u.role === 'TECHNICIAN'));
+          }
+        }
+        else {
+          setTechnicians(allUsers.filter((u) => u.role === 'TECHNICIAN'));
+        }
         }
         catch (error) {
             console.error('Failed to fetch ticket details', error);
@@ -103,12 +122,18 @@ export function TicketDetail() {
     };
     if (isLoading)
         return <LoadingSpinner fullPage/>;
-    if (!ticket || !resource)
-        return <div className="p-8 text-center">Ticket not found</div>;
+    if (!ticket)
+      return <div className="p-8 text-center">Ticket not found</div>;
+    if (!resource)
+      return <div className="p-8 text-center">Resource not found</div>;
     const getUser = (userId) => users.find((u) => u.id === userId);
     const getUserName = (userId) => {
         const foundUser = getUser(userId);
-        return (foundUser?.displayName || foundUser?.name || 'Unknown User');
+      return (foundUser?.displayName ||
+        foundUser?.name ||
+        foundUser?.username ||
+        foundUser?.email ||
+        'Unknown User');
     };
     const getUserAvatar = (userId) => getUser(userId)?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(getUserName(userId))}&background=6366f1&color=fff`;
     // Calculate SLA
@@ -296,9 +321,34 @@ export function TicketDetail() {
                 <select value={ticket.assignedTo || ''} onChange={(e) => handleAssign(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500">
                   <option value="">Unassigned</option>
                   {technicians.map((tech) => (<option key={tech.id} value={tech.id}>
-                      {tech.name}
+                      {tech.displayName || tech.username || tech.email || tech.id}
                     </option>))}
                 </select>
+              </div>) : user?.role === 'TECHNICIAN' ? (<div className="space-y-3">
+                {ticket.assignedTo ? (<div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center">
+                      <img src={getUserAvatar(ticket.assignedTo)} className="w-8 h-8 rounded-full mr-3" alt=""/>
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          {ticket.assignedTo === user?.id
+                            ? 'Assigned to you'
+                            : getUserName(ticket.assignedTo)}
+                        </p>
+                        <p className="text-xs text-slate-500">Technician</p>
+                      </div>
+                    </div>
+
+                    {ticket.assignedTo !== user?.id && (<span className="text-xs text-slate-500 italic">
+                        You can’t change assignment
+                      </span>)}
+                  </div>) : (<div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-500 italic">
+                      Unassigned
+                    </span>
+                    <button onClick={() => handleAssign(user?.id)} className="px-3 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors" type="button">
+                      Assign to me
+                    </button>
+                  </div>)}
               </div>) : (<div className="flex items-center">
                 {ticket.assignedTo ? (<>
                     <img src={getUserAvatar(ticket.assignedTo)} className="w-8 h-8 rounded-full mr-3" alt=""/>
