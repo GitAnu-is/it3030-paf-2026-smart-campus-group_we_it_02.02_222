@@ -50,11 +50,18 @@ export function Tickets() {
         }
     };
     const getResourceName = (id) => resources.find((r) => r.id === id)?.name || 'Unknown Resource';
-    const filteredTickets = tickets.filter((t) => t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getResourceName(t.resourceId)
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
+    const normalizeSearchValue = (value) => (value ?? '').toString().toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    const filteredTickets = q
+      ? tickets.filter((t) => {
+        const resourceName = getResourceName(t?.resourceId);
+        return (normalizeSearchValue(t?.description).includes(q) ||
+          normalizeSearchValue(t?.category).includes(q) ||
+          normalizeSearchValue(t?.status).includes(q) ||
+          normalizeSearchValue(t?.priority).includes(q) ||
+          normalizeSearchValue(resourceName).includes(q));
+      })
+      : tickets;
     // Calculate SLA (time since creation)
     const getSLA = (createdAt) => {
         const created = new Date(createdAt).getTime();
@@ -138,11 +145,8 @@ export function Tickets() {
                 }} onClick={() => navigate(`/tickets/${ticket.id}`)} className="hover:bg-slate-50 cursor-pointer transition-colors group">
                     <td className="p-4">
                       <div className="flex flex-col">
-                        <span className="font-mono text-xs text-slate-500 mb-1">
-                          {ticket.id}
-                        </span>
                         <span className="font-medium text-slate-900 line-clamp-1 group-hover:text-primary-600 transition-colors">
-                          {ticket.category.replace('_', ' ')}
+                          {(ticket.category || 'OTHER').replace('_', ' ')}
                         </span>
                       </div>
                     </td>

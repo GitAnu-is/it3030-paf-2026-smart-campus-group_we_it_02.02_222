@@ -11,26 +11,26 @@ export function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     useEffect(() => {
+        const fetchData = async () => {
+        if (!user)
+                return;
+            setIsLoading(true);
+            try {
+                const data = await getNotifications(user.id);
+                setNotifications(data);
+            }
+            catch (error) {
+                console.error('Failed to fetch notifications', error);
+            }
+            finally {
+                setIsLoading(false);
+            }
+        };
         fetchData();
     }, [user]);
-    const fetchData = async () => {
-        if (!user)
-            return;
-        setIsLoading(true);
-        try {
-            const data = await getNotifications(user.id);
-            setNotifications(data);
-        }
-        catch (error) {
-            console.error('Failed to fetch notifications', error);
-        }
-        finally {
-            setIsLoading(false);
-        }
-    };
     const handleMarkAsRead = async (id) => {
         await markNotificationAsRead(id);
-        setNotifications(notifications.map((n) => n.id === id
+        setNotifications((current) => current.map((n) => n.id === id
             ? {
                 ...n,
                 read: true,
@@ -41,7 +41,7 @@ export function Notifications() {
         if (!user)
             return;
         await markAllNotificationsAsRead(user.id);
-        setNotifications(notifications.map((n) => ({
+        setNotifications((current) => current.map((n) => ({
             ...n,
             read: true,
         })));
@@ -65,6 +65,8 @@ export function Notifications() {
                 return <Wrench className="w-5 h-5 text-orange-500"/>;
             case 'COMMENT':
                 return <MessageSquare className="w-5 h-5 text-green-500"/>;
+            case 'SYSTEM':
+                return <Bell className="w-5 h-5 text-violet-500"/>;
             default:
                 return <Info className="w-5 h-5 text-slate-500"/>;
         }

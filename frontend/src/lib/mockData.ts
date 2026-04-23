@@ -218,7 +218,7 @@ export const mockNotifications: Notification[] = [
     relatedId: 'b4',
   },
   {
-    id: 'n2',
+    id: 'n3',
     userId: 'u1',
     type: 'COMMENT',
     message: 'Charlie Tech commented on your ticket.',
@@ -227,7 +227,15 @@ export const mockNotifications: Notification[] = [
     relatedId: 't1',
   },
   {
-    id: 'n3',
+    id: 'n4',
+    userId: 'u1',
+    type: 'SYSTEM',
+    message: 'System maintenance is scheduled for tonight at 10:00 PM.',
+    read: false,
+    createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+  },
+  {
+    id: 'n5',
     userId: 'u2',
     type: 'BOOKING',
     message:
