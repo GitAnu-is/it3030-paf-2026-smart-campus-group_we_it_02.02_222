@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.smartcampus.backend.model.Resource;
 import com.smartcampus.backend.model.ResourceStatus;
 import com.smartcampus.backend.model.ResourceType;
+import com.smartcampus.backend.model.Booking;
 import com.smartcampus.backend.model.Ticket;
 import com.smartcampus.backend.model.TicketComment;
 import com.smartcampus.backend.model.User;
@@ -26,11 +27,14 @@ public class MongoCollectionInitializer implements CommandLineRunner {
     private static final String LEGACY_USERS_COLLECTION = "users";
     private static final String RESOURCES_COLLECTION = "Uniresources";
     private static final String LEGACY_RESOURCES_COLLECTION = "resources";
+    private static final String BOOKINGS_COLLECTION = "Uni_Booking";
+    private static final String LEGACY_BOOKINGS_COLLECTION = "bookings";
     private static final Set<String> ALLOWED_COLLECTIONS = Set.of(
         USERS_COLLECTION,
         "tickets",
         "ticket_comments",
-        RESOURCES_COLLECTION
+        RESOURCES_COLLECTION,
+        BOOKINGS_COLLECTION
     );
 
     private final MongoTemplate mongoTemplate;
@@ -54,6 +58,7 @@ public class MongoCollectionInitializer implements CommandLineRunner {
         try {
             migrateLegacyUsersCollection();
             migrateLegacyResourcesCollection();
+            migrateLegacyBookingsCollection();
 
             if (cleanupForeignCollections) {
                 dropForeignCollections();
@@ -70,6 +75,9 @@ public class MongoCollectionInitializer implements CommandLineRunner {
             }
             if (!mongoTemplate.collectionExists(Resource.class)) {
                 mongoTemplate.createCollection(Resource.class);
+            }
+            if (!mongoTemplate.collectionExists(Booking.class)) {
+                mongoTemplate.createCollection(Booking.class);
             }
 
             // Spring Data will automatically create indexes from @Indexed annotations
@@ -117,6 +125,24 @@ public class MongoCollectionInitializer implements CommandLineRunner {
 
         mongoTemplate.dropCollection(LEGACY_RESOURCES_COLLECTION);
         System.out.println("Migrated legacy resources collection to " + RESOURCES_COLLECTION);
+    }
+
+    private void migrateLegacyBookingsCollection() {
+        boolean legacyExists = mongoTemplate.collectionExists(LEGACY_BOOKINGS_COLLECTION);
+        if (!legacyExists) {
+            return;
+        }
+
+        if (!mongoTemplate.collectionExists(BOOKINGS_COLLECTION)) {
+            mongoTemplate.createCollection(BOOKINGS_COLLECTION);
+        }
+
+        for (Booking legacyBooking : mongoTemplate.findAll(Booking.class, LEGACY_BOOKINGS_COLLECTION)) {
+            mongoTemplate.save(legacyBooking, BOOKINGS_COLLECTION);
+        }
+
+        mongoTemplate.dropCollection(LEGACY_BOOKINGS_COLLECTION);
+        System.out.println("Migrated legacy bookings collection to " + BOOKINGS_COLLECTION);
     }
 
     private void dropForeignCollections() {
