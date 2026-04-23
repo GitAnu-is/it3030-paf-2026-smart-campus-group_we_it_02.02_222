@@ -58,6 +58,53 @@ const dispatchNotificationChange = () => {
   window.dispatchEvent(new Event('uniops-notifications-changed'))
 }
 
+const formatTicketStatusLabel = (status: TicketStatus | string) =>
+  status
+    .toString()
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+
+const appendLocalNotification = (
+  userId: string | undefined,
+  notification: Omit<Notification, 'id' | 'userId' | 'read' | 'createdAt'>,
+) => {
+  if (!userId) return
+
+  const nextNotification: Notification = {
+    id:
+      (globalThis as any).crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    userId,
+    read: false,
+    createdAt: new Date().toISOString(),
+    ...notification,
+  }
+
+  const existing = getLocalNotifications(userId)
+  writeStoredJson(getNotificationStorageKey(userId), [
+    nextNotification,
+    ...existing,
+  ])
+  dispatchNotificationChange()
+}
+
+const createTicketStatusNotification = (
+  ticket: Partial<Ticket> | null | undefined,
+  previousStatus?: string,
+) => {
+  if (!ticket?.id || !ticket.userId || !ticket.status) return
+  if (previousStatus === ticket.status) return
+
+  const statusLabel = formatTicketStatusLabel(ticket.status)
+  appendLocalNotification(ticket.userId, {
+    type: 'TICKET',
+    relatedId: ticket.id,
+    message: `Your ticket is now in ${statusLabel} stage.`,
+  })
+}
+
 const seedNotificationsForUser = (userId: string) => {
   const userNotifications = mockNotifications.filter((notification) => notification.userId === userId)
   const hasSystemNotification = userNotifications.some((notification) => notification.type === 'SYSTEM')
@@ -317,10 +364,12 @@ export const updateTicketStatus = async (
   resolutionNotes?: string,
 ) => {
   try {
+    const currentTicket = await getTicketById(id)
     const response = await apiClient.put(`/api/tickets/${id}`, {
       status,
       resolutionNotes,
     })
+    createTicketStatusNotification(response.data, currentTicket?.status)
     return response.data
   } catch (error) {
     console.error('Error updating ticket status:', error)
@@ -330,9 +379,11 @@ export const updateTicketStatus = async (
 
 export const assignTicket = async (id: string, assignedTo: string) => {
   try {
+    const currentTicket = await getTicketById(id)
     const response = await apiClient.put(`/api/tickets/${id}/assign`, {
       assignedTo,
     })
+    createTicketStatusNotification(response.data, currentTicket?.status)
     return response.data
   } catch (error) {
     console.error('Error assigning ticket:', error)
