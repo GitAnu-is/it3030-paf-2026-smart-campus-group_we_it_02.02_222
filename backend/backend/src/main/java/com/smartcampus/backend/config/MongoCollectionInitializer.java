@@ -2,8 +2,10 @@ package com.smartcampus.backend.config;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -12,28 +14,59 @@ import org.springframework.stereotype.Component;
 import com.smartcampus.backend.model.Resource;
 import com.smartcampus.backend.model.ResourceStatus;
 import com.smartcampus.backend.model.ResourceType;
+import com.smartcampus.backend.model.Ticket;
+import com.smartcampus.backend.model.TicketComment;
 import com.smartcampus.backend.model.User;
 import com.smartcampus.backend.repository.ResourceRepository;
 import com.smartcampus.backend.repository.UserRepository;
 
 @Component
 public class MongoCollectionInitializer implements CommandLineRunner {
+    private static final String USERS_COLLECTION = "UniOpsUsers";
+    private static final String LEGACY_USERS_COLLECTION = "users";
+    private static final String RESOURCES_COLLECTION = "Uniresources";
+    private static final String LEGACY_RESOURCES_COLLECTION = "resources";
+    private static final Set<String> ALLOWED_COLLECTIONS = Set.of(
+        USERS_COLLECTION,
+        "tickets",
+        "ticket_comments",
+        RESOURCES_COLLECTION
+    );
 
     private final MongoTemplate mongoTemplate;
     private final UserRepository userRepository;
     private final ResourceRepository resourceRepository;
+    private final boolean cleanupForeignCollections;
 
-    public MongoCollectionInitializer(MongoTemplate mongoTemplate, UserRepository userRepository, ResourceRepository resourceRepository) {
+    public MongoCollectionInitializer(
+            MongoTemplate mongoTemplate,
+            UserRepository userRepository,
+            ResourceRepository resourceRepository,
+            @Value("${app.mongodb.cleanup-foreign-collections:true}") boolean cleanupForeignCollections) {
         this.mongoTemplate = mongoTemplate;
         this.userRepository = userRepository;
         this.resourceRepository = resourceRepository;
+        this.cleanupForeignCollections = cleanupForeignCollections;
     }
 
     @Override
     public void run(String... args) {
         try {
+            migrateLegacyUsersCollection();
+            migrateLegacyResourcesCollection();
+
+            if (cleanupForeignCollections) {
+                dropForeignCollections();
+            }
+
             if (!mongoTemplate.collectionExists(User.class)) {
                 mongoTemplate.createCollection(User.class);
+            }
+            if (!mongoTemplate.collectionExists(Ticket.class)) {
+                mongoTemplate.createCollection(Ticket.class);
+            }
+            if (!mongoTemplate.collectionExists(TicketComment.class)) {
+                mongoTemplate.createCollection(TicketComment.class);
             }
             if (!mongoTemplate.collectionExists(Resource.class)) {
                 mongoTemplate.createCollection(Resource.class);
@@ -47,6 +80,55 @@ public class MongoCollectionInitializer implements CommandLineRunner {
         } catch (Exception e) {
             System.err.println("Warning: MongoCollectionInitializer failed: " + e.getMessage());
             // Continue anyway - collections will be created on first use
+        }
+    }
+
+    private void migrateLegacyUsersCollection() {
+        boolean legacyExists = mongoTemplate.collectionExists(LEGACY_USERS_COLLECTION);
+        if (!legacyExists) {
+            return;
+        }
+
+        if (!mongoTemplate.collectionExists(USERS_COLLECTION)) {
+            mongoTemplate.createCollection(USERS_COLLECTION);
+        }
+
+        for (User legacyUser : mongoTemplate.findAll(User.class, LEGACY_USERS_COLLECTION)) {
+            mongoTemplate.save(legacyUser, USERS_COLLECTION);
+        }
+
+        mongoTemplate.dropCollection(LEGACY_USERS_COLLECTION);
+        System.out.println("Migrated legacy users collection to " + USERS_COLLECTION);
+    }
+
+    private void migrateLegacyResourcesCollection() {
+        boolean legacyExists = mongoTemplate.collectionExists(LEGACY_RESOURCES_COLLECTION);
+        if (!legacyExists) {
+            return;
+        }
+
+        if (!mongoTemplate.collectionExists(RESOURCES_COLLECTION)) {
+            mongoTemplate.createCollection(RESOURCES_COLLECTION);
+        }
+
+        for (Resource legacyResource : mongoTemplate.findAll(Resource.class, LEGACY_RESOURCES_COLLECTION)) {
+            mongoTemplate.save(legacyResource, RESOURCES_COLLECTION);
+        }
+
+        mongoTemplate.dropCollection(LEGACY_RESOURCES_COLLECTION);
+        System.out.println("Migrated legacy resources collection to " + RESOURCES_COLLECTION);
+    }
+
+    private void dropForeignCollections() {
+        for (String collectionName : mongoTemplate.getCollectionNames()) {
+            if (collectionName.startsWith("system.")) {
+                continue;
+            }
+
+            if (!ALLOWED_COLLECTIONS.contains(collectionName)) {
+                mongoTemplate.dropCollection(collectionName);
+                System.out.println("Dropped foreign collection from UniOps: " + collectionName);
+            }
         }
     }
 

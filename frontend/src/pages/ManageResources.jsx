@@ -104,7 +104,8 @@ export function ManageResources() {
         availabilityWindows: formData.availabilityWindows
           .split(',')
           .map((w) => w.trim())
-          .filter((w) => w.length > 0),
+          .filter((w) => w.length > 0)
+          .join(', '),
       }
 
       if (editingId) {
