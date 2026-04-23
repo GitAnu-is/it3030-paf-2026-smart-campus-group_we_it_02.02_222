@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
+import { getNotificationPreferences, updateNotificationPreferences, DEFAULT_NOTIFICATION_PREFERENCES, } from '../lib/api';
 import { Bell, Shield, User, Smartphone } from 'lucide-react';
 import { EmptyState } from '../components/EmptyState';
 export function Settings() {
@@ -7,12 +8,9 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState('notifications');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState(null);
-    const [notifications, setNotifications] = useState({
-        bookings: true,
-        tickets: true,
-        comments: true,
-        system: false,
-    });
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState(null);
 
   const [profileForm, setProfileForm] = useState({
     displayName: '',
@@ -26,12 +24,60 @@ export function Settings() {
       avatarUrl: user.avatar || '',
     });
   }, [activeTab, user]);
-    const toggleNotification = (key) => {
-        setNotifications((prev) => ({
-            ...prev,
-            [key]: !prev[key],
-        }));
+
+  useEffect(() => {
+    if (activeTab !== 'notifications' || !user) return;
+
+    let isMounted = true;
+    setNotificationMessage(null);
+    getNotificationPreferences(user.id)
+      .then((preferences) => {
+        if (isMounted) {
+          setNotifications(preferences);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setNotificationMessage({
+            type: 'error',
+            text: 'Could not load notification preferences.',
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
     };
+  }, [activeTab, user]);
+
+  const toggleNotification = async (key) => {
+    if (!user || isSavingNotifications) return;
+
+    const nextPreferences = {
+      ...notifications,
+      [key]: !notifications[key],
+    };
+
+    setNotifications(nextPreferences);
+    setIsSavingNotifications(true);
+    setNotificationMessage(null);
+
+    try {
+      await updateNotificationPreferences(user.id, nextPreferences);
+      setNotificationMessage({
+        type: 'success',
+        text: 'Notification preferences saved.',
+      });
+    } catch {
+      setNotifications(notifications);
+      setNotificationMessage({
+        type: 'error',
+        text: 'Could not save notification preferences.',
+      });
+    } finally {
+      setIsSavingNotifications(false);
+    }
+  };
 
     const tabButtonClass = useMemo(() => {
         const base = 'w-full flex items-center px-4 py-3 rounded-lg font-medium transition-colors';
@@ -222,6 +268,14 @@ export function Settings() {
             </p>
           </div>
 
+          {notificationMessage && (
+            <div className={`mx-6 mt-6 text-sm px-4 py-3 rounded-lg border ${notificationMessage.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-red-50 text-red-700 border-red-200'}`}>
+              {notificationMessage.text}
+            </div>
+          )}
+
           <div className="divide-y divide-slate-100">
             <div className="p-6 flex items-center justify-between">
               <div>
@@ -235,6 +289,7 @@ export function Settings() {
               <button
                 type="button"
                 onClick={() => toggleNotification('bookings')}
+                disabled={isSavingNotifications}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifications.bookings ? 'bg-primary-600' : 'bg-slate-200'}`}
                 aria-pressed={notifications.bookings}
               >
@@ -254,6 +309,7 @@ export function Settings() {
               <button
                 type="button"
                 onClick={() => toggleNotification('tickets')}
+                disabled={isSavingNotifications}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifications.tickets ? 'bg-primary-600' : 'bg-slate-200'}`}
                 aria-pressed={notifications.tickets}
               >
@@ -271,6 +327,7 @@ export function Settings() {
               <button
                 type="button"
                 onClick={() => toggleNotification('comments')}
+                disabled={isSavingNotifications}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifications.comments ? 'bg-primary-600' : 'bg-slate-200'}`}
                 aria-pressed={notifications.comments}
               >
@@ -290,6 +347,7 @@ export function Settings() {
               <button
                 type="button"
                 onClick={() => toggleNotification('system')}
+                disabled={isSavingNotifications}
                 className={`w-11 h-6 rounded-full transition-colors relative ${notifications.system ? 'bg-primary-600' : 'bg-slate-200'}`}
                 aria-pressed={notifications.system}
               >

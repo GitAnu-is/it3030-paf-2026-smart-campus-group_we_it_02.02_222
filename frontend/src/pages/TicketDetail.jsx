@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { getTicketById, getResourceById, getCommentsForTicket, updateTicketStatus, assignTicket, addComment, getUsers, } from '../lib/api';
+import { getTicketById, getResourceById, getCommentsForTicket, updateTicketStatus, assignTicket, addComment, getUsers, updateComment, deleteComment, } from '../lib/api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { StatusBadge } from '../components/StatusBadge';
 import { PriorityBadge } from '../components/PriorityBadge';
@@ -19,6 +19,9 @@ export function TicketDetail() {
     const [isLoading, setIsLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editingText, setEditingText] = useState('');
+    const [isUpdatingComment, setIsUpdatingComment] = useState(false);
     const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
     const [resolutionNotes, setResolutionNotes] = useState('');
     useEffect(() => {
@@ -86,6 +89,56 @@ export function TicketDetail() {
             setIsSubmittingComment(false);
         }
     };
+
+    const canModifyComment = (comment) => {
+      const commentUserId = comment?.userId || comment?.authorId;
+      return !!user && (user.role === 'ADMIN' || commentUserId === user.id);
+    };
+
+    const startEditComment = (comment) => {
+      setEditingCommentId(comment?.id || null);
+      setEditingText(comment?.text || comment?.content || '');
+    };
+
+    const cancelEditComment = () => {
+      setEditingCommentId(null);
+      setEditingText('');
+    };
+
+    const handleSaveEdit = async () => {
+      if (!id || !editingCommentId)
+        return;
+      const nextText = editingText.trim();
+      if (!nextText)
+        return;
+      setIsUpdatingComment(true);
+      try {
+        await updateComment(id, editingCommentId, nextText);
+        setComments((prev) => prev.map((c) => c.id === editingCommentId ? { ...c, text: nextText, editedAt: new Date().toISOString() } : c));
+        cancelEditComment();
+      }
+      catch (error) {
+        console.error('Failed to update comment', error);
+      }
+      finally {
+        setIsUpdatingComment(false);
+      }
+    };
+
+    const handleDeleteComment = async (commentId) => {
+      if (!id || !commentId)
+        return;
+      const ok = window.confirm('Delete this comment?');
+      if (!ok)
+        return;
+      try {
+        await deleteComment(id, commentId);
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+      }
+      catch (error) {
+        console.error('Failed to delete comment', error);
+      }
+    };
     const handleStatusChange = async (status) => {
         if (!ticket)
             return;
@@ -152,9 +205,6 @@ export function TicketDetail() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <span className="font-mono text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                #{ticket.id}
-              </span>
               <StatusBadge status={ticket.status}/>
               <PriorityBadge priority={ticket.priority}/>
             </div>
@@ -251,18 +301,39 @@ export function TicketDetail() {
               {comments.length === 0 ? (<p className="text-center text-slate-500 py-4">
                   No comments yet.
                 </p>) : (comments.map((comment) => (<div key={comment.id} className="flex gap-4">
-                    <img src={getUserAvatar(comment.userId)} alt="" className="w-10 h-10 rounded-full border border-slate-200 shrink-0"/>
+                    <img src={getUserAvatar(comment.userId || comment.authorId)} alt="" className="w-10 h-10 rounded-full border border-slate-200 shrink-0"/>
                     <div className="flex-1">
                       <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-tl-none p-4">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-slate-900">
-                            {getUserName(comment.userId)}
+                            {getUserName(comment.userId || comment.authorId)}
                           </span>
-                          <span className="text-xs text-slate-500">
-                            {new Date(comment.createdAt).toLocaleString()}
-                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-500">
+                              {new Date(comment.createdAt).toLocaleString()}
+                              {comment.editedAt ? ' (edited)' : ''}
+                            </span>
+                            {canModifyComment(comment) && editingCommentId !== comment.id && (<>
+                                <button type="button" onClick={() => startEditComment(comment)} className="text-xs text-slate-500 hover:text-slate-900">
+                                  Edit
+                                </button>
+                                <button type="button" onClick={() => handleDeleteComment(comment.id)} className="text-xs text-red-600 hover:text-red-700">
+                                  Delete
+                                </button>
+                              </>)}
+                          </div>
                         </div>
-                        <p className="text-slate-700 text-sm">{comment.text}</p>
+                        {editingCommentId === comment.id ? (<div className="space-y-2">
+                            <input type="text" value={editingText} onChange={(e) => setEditingText(e.target.value)} className="w-full p-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"/>
+                            <div className="flex justify-end gap-2">
+                              <button type="button" onClick={cancelEditComment} className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50" disabled={isUpdatingComment}>
+                                Cancel
+                              </button>
+                              <button type="button" onClick={handleSaveEdit} className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50" disabled={isUpdatingComment || !editingText.trim()}>
+                                Save
+                              </button>
+                            </div>
+                          </div>) : (<p className="text-slate-700 text-sm">{comment.text || comment.content}</p>)}
                       </div>
                     </div>
                   </div>)))}

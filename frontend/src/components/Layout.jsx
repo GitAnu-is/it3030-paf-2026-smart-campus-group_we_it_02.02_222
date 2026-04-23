@@ -26,9 +26,30 @@ export function Layout() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
     useEffect(() => {
-        if (user) {
-            getNotifications(user.id).then(setNotifications);
+      let isMounted = true;
+      const loadNotifications = async () => {
+        if (!user) {
+          if (isMounted) {
+            setNotifications([]);
+          }
+          return;
         }
+        const data = await getNotifications(user.id);
+        if (isMounted) {
+          setNotifications(data);
+        }
+      };
+      loadNotifications();
+      const handleNotificationsChanged = () => {
+        loadNotifications();
+      };
+      window.addEventListener('uniops-notifications-changed', handleNotificationsChanged);
+      window.addEventListener('storage', handleNotificationsChanged);
+      return () => {
+        isMounted = false;
+        window.removeEventListener('uniops-notifications-changed', handleNotificationsChanged);
+        window.removeEventListener('storage', handleNotificationsChanged);
+      };
     }, [user]);
     const handleLogout = () => {
         logout();
@@ -197,7 +218,7 @@ export function Layout() {
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="relative hidden md:block">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-              <input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 bg-slate-100 border-transparent rounded-lg text-sm focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all w-64"/>
+              <input type="text" placeholder="Search..." className="pl-9 pr-4 py-2 bg-slate-100 border-transparent rounded-lg text-sm outline-none focus:outline-none focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 transition-all w-64"/>
             </div>
 
             <button onClick={() => navigate('/notifications')} className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">

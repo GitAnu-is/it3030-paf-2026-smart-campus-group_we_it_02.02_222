@@ -2,14 +2,23 @@ import axios, { AxiosInstance } from 'axios'
 import type {
   Booking,
   Ticket,
-  Comment,
-  User,
+  Notification,
   ResourceType,
   BookingStatus,
   TicketStatus,
 } from './types'
+import { mockNotifications } from './mockData'
 
 const TOKEN_KEY = 'uniops_token'
+const NOTIFICATION_STORAGE_PREFIX = 'uniops_notifications:'
+const NOTIFICATION_PREFERENCES_PREFIX = 'uniops_notification_preferences:'
+
+export const DEFAULT_NOTIFICATION_PREFERENCES = {
+  bookings: true,
+  tickets: true,
+  comments: true,
+  system: true,
+}
 
 const API_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8081'
@@ -19,6 +28,85 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
 })
+
+const getNotificationStorageKey = (userId: string) =>
+  `${NOTIFICATION_STORAGE_PREFIX}${userId}`
+
+const getNotificationPreferencesKey = (userId: string) =>
+  `${NOTIFICATION_PREFERENCES_PREFIX}${userId}`
+
+const readStoredJson = <T,>(key: string): T | null => {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    return JSON.parse(raw) as T
+  } catch {
+    return null
+  }
+}
+
+const writeStoredJson = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // ignore storage failures
+  }
+}
+
+const dispatchNotificationChange = () => {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event('uniops-notifications-changed'))
+}
+
+const seedNotificationsForUser = (userId: string) => {
+  const userNotifications = mockNotifications.filter((notification) => notification.userId === userId)
+  const hasSystemNotification = userNotifications.some((notification) => notification.type === 'SYSTEM')
+
+  const seededNotifications = hasSystemNotification
+    ? userNotifications
+    : [
+        {
+          id: `${userId}-system-1`,
+          userId,
+          type: 'SYSTEM',
+          message: 'System updates, maintenance notices, and platform announcements appear here.',
+          read: false,
+          createdAt: new Date().toISOString(),
+        },
+        ...userNotifications,
+      ]
+
+  writeStoredJson(getNotificationStorageKey(userId), seededNotifications)
+  return seededNotifications as Notification[]
+}
+
+const getLocalNotifications = (userId: string): Notification[] => {
+  const stored = readStoredJson<Notification[]>(getNotificationStorageKey(userId))
+  if (stored) {
+    return stored
+  }
+
+  return seedNotificationsForUser(userId)
+}
+
+const filterNotificationsByPreferences = (
+  notifications: Notification[],
+  preferences: Record<string, boolean>,
+) => {
+  return notifications.filter((notification) => {
+    switch (notification.type) {
+      case 'BOOKING':
+        return preferences.bookings !== false
+      case 'TICKET':
+        return preferences.tickets !== false
+      case 'COMMENT':
+        return preferences.comments !== false
+      case 'SYSTEM':
+      default:
+        return preferences.system !== false
+    }
+  })
+}
 
 // Request interceptor to attach JWT token
 apiClient.interceptors.request.use(
@@ -329,14 +417,106 @@ export const addComment = async (
   }
 }
 
+export const updateComment = async (
+  ticketId: string,
+  commentId: string,
+  text: string,
+) => {
+  try {
+    const response = await apiClient.put(
+      `/api/tickets/${ticketId}/comments/${commentId}`,
+      { text },
+    )
+    return response.data
+  } catch (error) {
+    const status = (error as any)?.response?.status
+    if (status === 404) {
+      const key = `uniops_comments:${ticketId}`
+      try {
+        const raw = localStorage.getItem(key)
+        const existing = raw ? JSON.parse(raw) : []
+        const next = Array.isArray(existing)
+          ? existing.map((c: any) =>
+              c?.id === commentId
+                ? { ...c, text, editedAt: new Date().toISOString() }
+                : c,
+            )
+          : []
+        localStorage.setItem(key, JSON.stringify(next))
+        return next.find((c: any) => c?.id === commentId)
+      } catch {
+        return null
+      }
+    }
+
+    console.error('Error updating comment:', error)
+    throw error
+  }
+}
+
+export const deleteComment = async (ticketId: string, commentId: string) => {
+  try {
+    const response = await apiClient.delete(
+      `/api/tickets/${ticketId}/comments/${commentId}`,
+    )
+    return response.data
+  } catch (error) {
+    const status = (error as any)?.response?.status
+    if (status === 404) {
+      const key = `uniops_comments:${ticketId}`
+      try {
+        const raw = localStorage.getItem(key)
+        const existing = raw ? JSON.parse(raw) : []
+        const next = Array.isArray(existing)
+          ? existing.filter((c: any) => c?.id !== commentId)
+          : []
+        localStorage.setItem(key, JSON.stringify(next))
+        return { success: true }
+      } catch {
+        return { success: false }
+      }
+    }
+
+    console.error('Error deleting comment:', error)
+    throw error
+  }
+}
+
 // --- Notifications ---
+export const getNotificationPreferences = async (userId: string) => {
+  const stored = readStoredJson<Record<string, boolean>>(
+    getNotificationPreferencesKey(userId),
+  )
+  return {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...(stored || {}),
+  }
+}
+
+export const updateNotificationPreferences = async (
+  userId: string,
+  preferences: Record<string, boolean>,
+) => {
+  const nextPreferences = {
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+    ...preferences,
+  }
+
+  writeStoredJson(getNotificationPreferencesKey(userId), nextPreferences)
+  dispatchNotificationChange()
+  return nextPreferences
+}
+
 export const getNotifications = async (userId: string) => {
   try {
     const response = await apiClient.get(`/users/${userId}/notifications`)
     return response.data
   } catch (error) {
-    console.error('Error fetching notifications:', error)
-    throw error
+    const preferences = await getNotificationPreferences(userId)
+    return filterNotificationsByPreferences(
+      getLocalNotifications(userId),
+      preferences,
+    )
   }
 }
 
@@ -345,8 +525,26 @@ export const markNotificationAsRead = async (id: string) => {
     const response = await apiClient.put(`/notifications/${id}/read`)
     return response.data
   } catch (error) {
-    console.error('Error marking notification as read:', error)
-    throw error
+    const notificationKeys = Object.keys(localStorage).filter((key) =>
+      key.startsWith(NOTIFICATION_STORAGE_PREFIX),
+    )
+
+    for (const key of notificationKeys) {
+      const stored = readStoredJson<Notification[]>(key)
+      if (!stored) continue
+
+      const next = stored.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification,
+      )
+
+      if (next.some((notification, index) => notification !== stored[index])) {
+        writeStoredJson(key, next)
+        dispatchNotificationChange()
+        return next.find((notification) => notification.id === id) || null
+      }
+    }
+
+    return null
   }
 }
 
@@ -357,7 +555,14 @@ export const markAllNotificationsAsRead = async (userId: string) => {
     )
     return response.data
   } catch (error) {
-    console.error('Error marking all notifications as read:', error)
-    throw error
+    const stored = getLocalNotifications(userId)
+    const next = stored.map((notification) => ({
+      ...notification,
+      read: true,
+    }))
+
+    writeStoredJson(getNotificationStorageKey(userId), next)
+    dispatchNotificationChange()
+    return next
   }
 }
