@@ -31,18 +31,23 @@ public class MongoCollectionInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (!mongoTemplate.collectionExists(User.class)) {
-            mongoTemplate.createCollection(User.class);
-        }
-        if (!mongoTemplate.collectionExists(Resource.class)) {
-            mongoTemplate.createCollection(Resource.class);
-        }
+        try {
+            if (!mongoTemplate.collectionExists(User.class)) {
+                mongoTemplate.createCollection(User.class);
+            }
+            if (!mongoTemplate.collectionExists(Resource.class)) {
+                mongoTemplate.createCollection(Resource.class);
+            }
 
-        // Spring Data will automatically create indexes from @Indexed annotations
-        
-        // Seed test users and resources
-        seedTestUsers();
-        seedTestResources();
+            // Spring Data will automatically create indexes from @Indexed annotations
+            
+            // Seed test users and resources
+            seedTestUsers();
+            seedTestResources();
+        } catch (Exception e) {
+            System.err.println("Warning: MongoCollectionInitializer failed: " + e.getMessage());
+            // Continue anyway - collections will be created on first use
+        }
     }
 
     private void seedTestUsers() {
