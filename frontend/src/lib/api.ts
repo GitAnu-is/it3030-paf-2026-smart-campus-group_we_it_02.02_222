@@ -20,6 +20,25 @@ export const DEFAULT_NOTIFICATION_PREFERENCES = {
   system: true,
 }
 
+type BackendBooking = {
+  id: string
+  resourceId: string
+  resourceName?: string
+  userId: string
+  userEmail?: string
+  userName?: string
+  bookingDate: string
+  startTime: string
+  endTime: string
+  purpose: string
+  expectedAttendees?: number
+  status: BookingStatus
+  rejectionReason?: string
+  reviewedBy?: string
+  createdAt: string
+  updatedAt?: string
+}
+
 const API_BASE_URL =
   (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8081'
 
@@ -59,6 +78,14 @@ const dispatchNotificationChange = () => {
 }
 
 const formatTicketStatusLabel = (status: TicketStatus | string) =>
+  status
+    .toString()
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+
+const formatBookingStatusLabel = (status: BookingStatus | string) =>
   status
     .toString()
     .toLowerCase()
@@ -152,6 +179,53 @@ const filterNotificationsByPreferences = (
       default:
         return preferences.system !== false
     }
+  })
+}
+
+const mapBookingFromBackend = (booking: BackendBooking): Booking => ({
+  id: booking.id,
+  resourceId: booking.resourceId,
+  userId: booking.userId,
+  date: booking.bookingDate,
+  startTime: booking.startTime,
+  endTime: booking.endTime,
+  purpose: booking.purpose,
+  attendees: booking.expectedAttendees || 0,
+  status: booking.status,
+  reviewedBy: booking.reviewedBy,
+  reason: booking.rejectionReason,
+  createdAt: booking.createdAt,
+})
+
+const createBookingCreatedNotification = (
+  booking: BackendBooking | null | undefined,
+) => {
+  if (!booking?.id || !booking.userId) return
+
+  appendLocalNotification(booking.userId, {
+    type: 'BOOKING',
+    relatedId: booking.id,
+    message: `Your booking request for ${booking.resourceName || 'the selected resource'} was submitted and is pending approval.`,
+  })
+}
+
+const createBookingStatusNotification = (
+  booking: BackendBooking | null | undefined,
+  previousStatus?: string,
+) => {
+  if (!booking?.id || !booking.userId || !booking.status) return
+  if (previousStatus === booking.status) return
+
+  const statusLabel = formatBookingStatusLabel(booking.status)
+  const resourceLabel = booking.resourceName || 'your selected resource'
+  const reasonSuffix = booking.rejectionReason
+    ? ` Reason: ${booking.rejectionReason}`
+    : ''
+
+  appendLocalNotification(booking.userId, {
+    type: 'BOOKING',
+    relatedId: booking.id,
+    message: `Your booking for ${resourceLabel} is now ${statusLabel}.${reasonSuffix}`,
   })
 }
 
@@ -257,8 +331,8 @@ export const getBookings = async (filters?: {
     if (filters?.status) params.append('status', filters.status)
     if (filters?.resourceId) params.append('resourceId', filters.resourceId)
 
-    const response = await apiClient.get('/bookings', { params })
-    return response.data
+    const response = await apiClient.get('/api/v1/bookings', { params })
+    return response.data.map(mapBookingFromBackend)
   } catch (error) {
     console.error('Error fetching bookings:', error)
     throw error
@@ -272,7 +346,7 @@ export const checkBookingConflict = async (
   endTime: string,
 ) => {
   try {
-    const response = await apiClient.post('/bookings/check-conflict', {
+    const response = await apiClient.post('/api/v1/bookings/check-conflict', {
       resourceId,
       date,
       startTime,
@@ -289,8 +363,16 @@ export const createBooking = async (
   bookingData: Omit<Booking, 'id' | 'status' | 'createdAt'>,
 ) => {
   try {
-    const response = await apiClient.post('/bookings', bookingData)
-    return response.data
+    const response = await apiClient.post('/api/v1/bookings', {
+      resourceId: bookingData.resourceId,
+      bookingDate: bookingData.date,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+      purpose: bookingData.purpose,
+      expectedAttendees: bookingData.attendees,
+    })
+    createBookingCreatedNotification(response.data)
+    return mapBookingFromBackend(response.data)
   } catch (error) {
     console.error('Error creating booking:', error)
     throw error
@@ -304,12 +386,21 @@ export const updateBookingStatus = async (
   reason?: string,
 ) => {
   try {
-    const response = await apiClient.put(`/bookings/${id}/status`, {
+    const currentBooking = await apiClient.get(`/api/v1/bookings/${id}`)
+
+    if (status === 'CANCELLED') {
+      const response = await apiClient.put(`/api/v1/bookings/${id}/cancel`)
+      createBookingStatusNotification(response.data, currentBooking.data?.status)
+      return mapBookingFromBackend(response.data)
+    }
+
+    const response = await apiClient.put(`/api/v1/bookings/${id}/status`, {
       status,
       reviewedBy,
       reason,
     })
-    return response.data
+    createBookingStatusNotification(response.data, currentBooking.data?.status)
+    return mapBookingFromBackend(response.data)
   } catch (error) {
     console.error('Error updating booking status:', error)
     throw error

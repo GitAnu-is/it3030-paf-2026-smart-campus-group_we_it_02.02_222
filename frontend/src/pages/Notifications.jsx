@@ -11,22 +11,38 @@ export function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     useEffect(() => {
+        let isMounted = true;
         const fetchData = async () => {
-        if (!user)
+        if (!user) {
+                if (isMounted)
+                    setNotifications([]);
                 return;
+            }
             setIsLoading(true);
             try {
                 const data = await getNotifications(user.id);
-                setNotifications(data);
+                if (isMounted)
+                    setNotifications(data);
             }
             catch (error) {
                 console.error('Failed to fetch notifications', error);
             }
             finally {
-                setIsLoading(false);
+                if (isMounted)
+                    setIsLoading(false);
             }
         };
         fetchData();
+        const handleNotificationsChanged = () => {
+            fetchData();
+        };
+        window.addEventListener('uniops-notifications-changed', handleNotificationsChanged);
+        window.addEventListener('storage', handleNotificationsChanged);
+        return () => {
+            isMounted = false;
+            window.removeEventListener('uniops-notifications-changed', handleNotificationsChanged);
+            window.removeEventListener('storage', handleNotificationsChanged);
+        };
     }, [user]);
     const handleMarkAsRead = async (id) => {
         await markNotificationAsRead(id);

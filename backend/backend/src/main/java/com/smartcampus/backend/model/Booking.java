@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Document(collection = "bookings")
+@Document(collection = "Uni_Booking")
 @Data @Builder @NoArgsConstructor @AllArgsConstructor
 public class Booking {
     @Id private String id;
