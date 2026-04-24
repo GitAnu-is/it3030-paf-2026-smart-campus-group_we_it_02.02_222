@@ -1,0 +1,247 @@
+import { User, Resource, Booking, Ticket, Comment, Notification } from './types'
+
+export const mockUsers: User[] = [
+  {
+    id: 'u1',
+    name: 'Alice Student',
+    email: 'alice@university.edu',
+    role: 'USER',
+    avatar: 'https://i.pravatar.cc/150?u=u1',
+  },
+  {
+    id: 'u2',
+    name: 'Bob Admin',
+    email: 'admin@university.edu',
+    role: 'ADMIN',
+    avatar: 'https://i.pravatar.cc/150?u=u2',
+  },
+  {
+    id: 'u3',
+    name: 'Charlie Tech',
+    email: 'tech@university.edu',
+    role: 'TECHNICIAN',
+    avatar: 'https://i.pravatar.cc/150?u=u3',
+  },
+  {
+    id: 'u4',
+    name: 'Diana Professor',
+    email: 'diana@university.edu',
+    role: 'USER',
+    avatar: 'https://i.pravatar.cc/150?u=u4',
+  },
+]
+
+export const mockResources: Resource[] = [
+  {
+    id: 'r1',
+    name: 'Turing Lecture Hall',
+    type: 'LECTURE_HALL',
+    capacity: 200,
+    location: 'Computer Science Building, 1st Floor',
+    availabilityWindows: 'Mon-Fri 08:00-20:00',
+    status: 'ACTIVE',
+    description:
+      'Large tiered lecture hall with dual projectors and surround sound.',
+  },
+  {
+    id: 'r2',
+    name: 'Lovelace Lab',
+    type: 'LAB',
+    capacity: 30,
+    location: 'Computer Science Building, 2nd Floor',
+    availabilityWindows: 'Mon-Fri 08:00-22:00',
+    status: 'ACTIVE',
+    description: 'High-performance computing lab with 30 workstations.',
+  },
+  {
+    id: 'r3',
+    name: 'Innovation Hub Room A',
+    type: 'MEETING_ROOM',
+    capacity: 8,
+    location: 'Student Center, 3rd Floor',
+    availabilityWindows: 'Mon-Sun 08:00-23:00',
+    status: 'ACTIVE',
+    description:
+      'Small meeting room with whiteboard and video conferencing setup.',
+  },
+  {
+    id: 'r4',
+    name: 'Sony 4K Projector',
+    type: 'EQUIPMENT',
+    capacity: 1,
+    location: 'IT Services Desk',
+    availabilityWindows: 'Mon-Fri 09:00-17:00',
+    status: 'OUT_OF_SERVICE',
+    description: 'Portable 4K projector for special presentations.',
+  },
+  {
+    id: 'r5',
+    name: 'Newton Physics Lab',
+    type: 'LAB',
+    capacity: 40,
+    location: 'Science Building, 1st Floor',
+    availabilityWindows: 'Mon-Fri 08:00-18:00',
+    status: 'ACTIVE',
+    description: 'Fully equipped physics laboratory.',
+  },
+]
+
+const today = new Date().toISOString().split('T')[0]
+const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+export const mockBookings: Booking[] = [
+  {
+    id: 'b1',
+    resourceId: 'r1',
+    userId: 'u4',
+    date: today,
+    startTime: '10:00',
+    endTime: '12:00',
+    purpose: 'CS101 Midterm Exam',
+    attendees: 180,
+    status: 'APPROVED',
+    reviewedBy: 'u2',
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: 'b2',
+    resourceId: 'r3',
+    userId: 'u1',
+    date: today,
+    startTime: '14:00',
+    endTime: '16:00',
+    purpose: 'Study Group',
+    attendees: 5,
+    status: 'PENDING',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'b3',
+    resourceId: 'r2',
+    userId: 'u4',
+    date: yesterday,
+    startTime: '09:00',
+    endTime: '11:00',
+    purpose: 'Advanced Algorithms Lab',
+    attendees: 25,
+    status: 'APPROVED',
+    reviewedBy: 'u2',
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+  },
+  {
+    id: 'b4',
+    resourceId: 'r4',
+    userId: 'u1',
+    date: today,
+    startTime: '13:00',
+    endTime: '15:00',
+    purpose: 'Club Presentation',
+    attendees: 1,
+    status: 'REJECTED',
+    reviewedBy: 'u2',
+    reason: 'Equipment is currently out of service for maintenance.',
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+]
+
+export const mockTickets: Ticket[] = [
+  {
+    id: 't1',
+    resourceId: 'r4',
+    userId: 'u1',
+    category: 'IT_NETWORK',
+    description:
+      "Projector bulb seems to be burnt out. It won't turn on and the lamp indicator is flashing red.",
+    priority: 'HIGH',
+    status: 'IN_PROGRESS',
+    assignedTo: 'u3',
+    images: [],
+    contactDetails: 'alice@university.edu',
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 't2',
+    resourceId: 'r1',
+    userId: 'u4',
+    category: 'HVAC',
+    description: 'AC is making a loud rattling noise in the back of the hall.',
+    priority: 'MEDIUM',
+    status: 'OPEN',
+    images: [],
+    contactDetails: 'diana@university.edu',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: 't3',
+    resourceId: 'r2',
+    userId: 'u2',
+    category: 'IT_NETWORK',
+    description: 'Workstation 12 cannot connect to the domain.',
+    priority: 'LOW',
+    status: 'RESOLVED',
+    assignedTo: 'u3',
+    resolutionNotes: 'Re-seated network cable and flushed DNS.',
+    images: [],
+    contactDetails: 'admin@university.edu',
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 4 * 86400000).toISOString(),
+  },
+]
+
+export const mockComments: Comment[] = [
+  {
+    id: 'c1',
+    ticketId: 't1',
+    userId: 'u3',
+    text: 'I have ordered a replacement bulb. Should arrive tomorrow.',
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'c2',
+    ticketId: 't1',
+    userId: 'u1',
+    text: 'Thanks for the update!',
+    createdAt: new Date(Date.now() - 80000000).toISOString(),
+  },
+]
+
+export const mockNotifications: Notification[] = [
+  {
+    id: 'n1',
+    userId: 'u1',
+    type: 'BOOKING',
+    message: 'Your booking for Sony 4K Projector was rejected.',
+    read: false,
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    relatedId: 'b4',
+  },
+  {
+    id: 'n3',
+    userId: 'u1',
+    type: 'COMMENT',
+    message: 'Charlie Tech commented on your ticket.',
+    read: false,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    relatedId: 't1',
+  },
+  {
+    id: 'n4',
+    userId: 'u1',
+    type: 'SYSTEM',
+    message: 'System maintenance is scheduled for tonight at 10:00 PM.',
+    read: false,
+    createdAt: new Date(Date.now() - 3 * 3600000).toISOString(),
+  },
+  {
+    id: 'n5',
+    userId: 'u2',
+    type: 'BOOKING',
+    message:
+      'New booking request from Alice Student for Innovation Hub Room A.',
+    read: true,
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    relatedId: 'b2',
+  },
+]
