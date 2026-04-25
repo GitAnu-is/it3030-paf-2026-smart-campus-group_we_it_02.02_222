@@ -382,7 +382,7 @@ export function NewBooking() {
                 (step === 2 &&
                     (!date || !startTime || !endTime || !!conflictError)) ||
                 (step === 3 && (!purpose || !attendees))} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors shadow-sm">
-              Next <ArrowRight className="w-4 h-4 ml-2"/>
+              Next <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1"/>
             </button>) : (<button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors shadow-sm">
               {isSubmitting ? (<LoadingSpinner size="sm" className="text-white mr-2"/>) : (<CheckCircle className="w-4 h-4 mr-2"/>)}
               Submit Request
